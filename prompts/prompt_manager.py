@@ -1,5 +1,7 @@
+import time
+
 from ..ego.base_info import BotBaseInfo
-from .ego_prompt import SELFINFOPROMPT
+from .ego_prompt import SELFINFOPROMPT, CHATSTRUCTURELIMITPROMPT, CHATLIMITPROMPT
 from .message_prompt import MESSAGEUNITPROMPT
 from .model_prompt import CHATTOOLSPROMPT, MEMOTICONPROMPT, FILTERPROMPT
 
@@ -17,12 +19,21 @@ class PromptManager:
             bot_info.appearance,
             "、".join(x for x in bot_info.chat_style)
         )
+    @staticmethod
+    def _get_chat_limit_prompt() -> str:
+        return CHATLIMITPROMPT.format(str(time.strftime("%Y年%m月%d日 %H:%M", time.localtime())))
+
+    @staticmethod
+    def _get_chat_structure_limit_prompt() -> str:
+        return CHATSTRUCTURELIMITPROMPT
 
     @staticmethod
     def get_chat_prompt(bot_info: BotBaseInfo) -> str:
         prompts = [
             PromptManager._get_self_info_prompt(bot_info), # 角色信息
-            PromptManager.get_message_unit_prompt() # 介绍MessageUnit的组成
+            PromptManager.get_message_unit_prompt(), # 介绍MessageUnit的组成
+            PromptManager._get_chat_limit_prompt(), # 聊天时间限制
+            PromptManager._get_chat_structure_limit_prompt() # 聊天结构限制
             ]
         prompt = "\n".join(prompts)
         return prompt

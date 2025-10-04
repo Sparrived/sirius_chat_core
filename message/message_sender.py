@@ -19,3 +19,19 @@ class MessageSender:
         else:
             raise ValueError("source不合法")
         
+    @staticmethod
+    def send_message_to_source_sync(source: str, 
+                                     text: Optional[str] = None, 
+                                     at: Optional[str] = None, 
+                                     reply: Optional[str] = None, 
+                                     image: Optional[str] = None, 
+                                     rtf: Optional[MessageArray] = None
+                                     ):
+        """通过source发送消息到指定位置（同步版）"""
+        if source.startswith("G"):
+            status.global_api.post_group_msg_sync(source[1:], text, at=at, reply=reply, image=image, rtf=rtf)
+        elif source.startswith("P"):
+            status.global_api.post_private_msg_sync(source[1:], text, reply=reply, image=image, rtf=rtf)
+        else:
+            raise ValueError("source不合法")
+        

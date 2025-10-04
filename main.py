@@ -4,6 +4,11 @@ from ncatbot.utils import get_log
 
 from .config import SiriusChatCoreConfig
 from .ego import BotBaseInfo
+from .organs import TalkSystem, MemoticonSystem
+from .models import ChatModel, FilterModel
+from .api_platforms import PLATFORMNAMEMAP
+from .message import ChatRequest
+
 class SiriusChatCore(NcatBotPlugin):
     name = "SiriusChatCore"
     version = "0.1.1"
@@ -35,6 +40,7 @@ class SiriusChatCore(NcatBotPlugin):
         else:
             return  # 忽略其他类型消息
         self.log.debug(f"收到消息，来源: {source}, 内容: {event.raw_message}")
+        self.talk_system.add_talk(source, event.raw_message)
 
     def _on_chat_functions(self, event: NcatBotEvent):
         """处理聊天功能事件"""
@@ -55,4 +61,21 @@ class SiriusChatCore(NcatBotPlugin):
     def model_init(self):
         """模型初始化"""
         self._bot_info = BotBaseInfo(self.workspace)
+        # ======== Chat Model 初始化 ========
+        platform_name, model_name = next(iter(self.config["model_settings"]["model_selection"]["ChatModel"].items()))
+        chat_model = ChatModel(
+            model_name=model_name,
+            platform=PLATFORMNAMEMAP[platform_name](self.config["model_settings"]["platforms_apikey"][platform_name]),
+            bot_info=self._bot_info
+        )
+        # ======== Filter Model 初始化 ========
+        if self.config["chat_settings"]["filter_mode"]:
+            platform_name, model_name = next(iter(self.config["model_settings"]["model_selection"]["FilterModel"].items()))
+            filter_model = FilterModel(
+                model_name=model_name,
+                platform=PLATFORMNAMEMAP[platform_name](self.config["model_settings"]["platforms_apikey"][platform_name])
+            )
+        else:
+            filter_model = None
+        self.talk_system = TalkSystem(self.event_bus, self.workspace, chat_model, filter_model)
 

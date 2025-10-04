@@ -14,6 +14,7 @@ class ChatModel(BaseModel):
     def __init__(self, model_name: str, platform: ModelPlatform, bot_info: BotBaseInfo):
         self._init_tools = False
         self._chat_temp: list[dict] = []
+        self._bot_info = bot_info
         system_prompt = PromptManager.get_chat_prompt(bot_info)
 
         BaseModel.__init__(self, system_prompt, model_name, platform, temperature=0.7, top_p= 0.9, max_tokens=2048)
@@ -36,7 +37,7 @@ class ChatModel(BaseModel):
         except Exception as e:
             raise ValueError(f"处理数据失败: {e}")
 
-    def _process_func(self, chat_request: ChatRequest, filter: Optional[FilterModel]) -> tuple[dict, dict, str]:
+    def process_func(self, chat_request: ChatRequest, filter: Optional[FilterModel]) -> tuple[dict, dict, str]:
         processed_data = self.get_process_data(chat_request)
         validation_data = {}
         emotion = processed_data["emotion"] if processed_data["emotion"] in ["喜悦", "愤怒", "悲伤", "厌恶", "平静", "尴尬", "失望", "渴望", "疑惑"] else "平静"
@@ -45,7 +46,7 @@ class ChatModel(BaseModel):
             validation_data = filter.get_process_data(cr)
         return processed_data, validation_data, emotion
     
-    def _generate_reply_func(self, processed_data, validation_data = None):
+    def generate_reply_func(self, processed_data, validation_data = None):
         if validation_data:
             for original_content, verification_result in zip(processed_data["content"], validation_data["verified"]):
                 can_output = verification_result.get("can_output", False)
