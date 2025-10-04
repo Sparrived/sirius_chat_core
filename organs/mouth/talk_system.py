@@ -13,7 +13,7 @@ from ...models import ChatModel, FilterModel
 
 class TalkConfig(SystemConfig):
     def __init__(self, work_path: Path) -> None:
-        super().__init__(work_path)
+        super().__init__(work_path, [])
 
 class TalkSystem(BaseSystem[TalkConfig]):
     log = get_log("SiriusChatCore-TalkSystem")

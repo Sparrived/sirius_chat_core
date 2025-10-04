@@ -17,7 +17,11 @@ from ...message import MessageSender
 
 class MemoticonConfig(SystemConfig):
     send_prob: float = 0.5  # 发送表情包的概率
+    save_prob: float = 0.7  # 保存表情包的概率
     max_image_edge: int = 128  # 表情包图片保存的最大边长，超过则缩放
+
+    def __init__(self, work_path: Path) -> None:
+        super().__init__(work_path, ["send_prob", "save_prob", "max_image_edge"])
     
 
 class MemoticonSystem(BaseSystem[MemoticonConfig]):
@@ -46,8 +50,10 @@ class MemoticonSystem(BaseSystem[MemoticonConfig]):
         conn.commit()
         conn.close()
     
-    def judge_meme(self, img_base64: str) -> Optional[str]:
-        """判断图片是否为表情包"""
+    def judge_meme(self, img_base64: str):
+        """判断图片是否为表情包，是则保存"""
+        if random.random() > self.config.save_prob:
+            return
         img_base64 = self.resize_image(img_base64)
         img_hash = hashlib.sha256(img_base64.encode()).hexdigest()
         conn = sqlite3.connect(self._db_path)
@@ -55,12 +61,13 @@ class MemoticonSystem(BaseSystem[MemoticonConfig]):
         c.execute('SELECT hash FROM memoticon WHERE hash=?', (img_hash,))
         if c.fetchone():
             conn.close()
-            return None
+            return
         result = self._model.judge_meme(img_base64)
         if result["is_meme"]:
             if result["meme_type"]:
-                return self.save_image(img_base64, tags=",".join(result["meme_type"]), description=result["desp"])
-        return None
+                result = self.save_image(img_base64, tags=",".join(result["meme_type"]), description=result["desp"])
+                self.log.info(result)
+        return
     
     def send_meme(self, source, emotion: str = "平静"):
         """发送表情包"""

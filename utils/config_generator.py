@@ -1,10 +1,12 @@
 from pathlib import Path
-from typing import Any
 import yaml
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..organs.base_system import SystemConfig
 
 class ConfigGenerator:
     """配置文件生成器, 通过依赖注入调整config"""
-    def __init__(self, work_path: Path, instance: Any):
+    def __init__(self, work_path: Path, instance: "SystemConfig"):
         self._work_path = work_path
         self._instance = instance
 
@@ -14,9 +16,8 @@ class ConfigGenerator:
         if config_path.exists():
             return
         config = {}
-        for attr in dir(self._instance):
-            if not attr.startswith("_") and not callable(getattr(self._instance, attr)):
-                config[attr] = getattr(self._instance, attr)
+        for attr in self._instance.attr_order:
+            config[attr] = getattr(self._instance, attr)
         with open(config_path, 'w', encoding='utf-8') as f:
             yaml.safe_dump(config, f, allow_unicode=True, sort_keys=False)
 

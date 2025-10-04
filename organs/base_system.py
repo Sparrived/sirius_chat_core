@@ -16,7 +16,8 @@ class SystemConfig:
         - 然后加载已有配置覆盖默认值
     """
 
-    def __init__(self, work_path: Path):
+    def __init__(self, work_path: Path, attr_order: list[str]):
+        self.attr_order = attr_order
         self._config_generator = ConfigGenerator(work_path, self)
         self._config_generator.generate_config()
         self._config_generator.reload_config()
