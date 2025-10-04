@@ -7,7 +7,7 @@ from .ego import BotBaseInfo
 from .organs import TalkSystem, MemoticonSystem
 from .models import ChatModel, FilterModel
 from .api_platforms import PLATFORMNAMEMAP
-from .message import ChatRequest
+from .message import MessageUnit
 
 class SiriusChatCore(NcatBotPlugin):
     name = "SiriusChatCore"
@@ -33,14 +33,24 @@ class SiriusChatCore(NcatBotPlugin):
             if not self.config["chat_settings"]["private_chat_mode"]:
                 return  # 忽略私聊消息
             source = f"P{event.user_id}"
+            user_card = None
         elif isinstance(event, GroupMessageEvent):
             if event.group_id not in self.config["subscribed_groups"]:
                 return  # 忽略不在启用列表中的群聊消息
             source = f"G{event.group_id}"
+            user_card = event.sender.card if event.sender.card else None
         else:
             return  # 忽略其他类型消息
         self.log.debug(f"收到消息，来源: {source}, 内容: {event.raw_message}")
-        self.talk_system.add_talk(source, event.raw_message)
+        mu = MessageUnit(
+            user_nickname=event.sender.nickname,
+            user_id=str(event.user_id),
+            message=event.raw_message,
+            time=str(event.time),
+            source=source,
+            user_card=user_card
+        )
+        self.talk_system.add_talk(source, mu)
 
     def _on_chat_functions(self, event: NcatBotEvent):
         """处理聊天功能事件"""

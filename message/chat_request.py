@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Callable
-from .message_chain import MessageChain
+from .message_chain import MessageChain, MessageUnit
 
 
 @dataclass
@@ -13,7 +13,7 @@ class ChatRequest:
     """
     message_chain: MessageChain = field()
     source: Optional[str] = field(default="")
-    current_message: Optional[str] = field(default="")
+    current_message: Optional[MessageUnit] = field(default=None, repr=False, compare=False)
     timestamp: Optional[int] = field(default=0)
     at_bot: Optional[bool] = field(default=False)
     tools: Optional[List[Callable]] = field(default=None, repr=False, compare=False)

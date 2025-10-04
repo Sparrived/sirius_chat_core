@@ -23,13 +23,13 @@ class MessageUnit:
     user_id: str = field(default="")
     message: str = field(default="")
     time: str = field(default="")
-    target: str = field(default="")
+    source: str = field(default="")
     user_card: Optional[str] = field(default=None)
 
     # ------------------------------------------------------------------
     # 序列化 / 反序列化
     # ------------------------------------------------------------------
-    def __str__(self) -> str:  # 保持原有接口
+    def __str__(self) -> str: 
         if self.user_card:
             return (
                 f"<message><time:{self.time}/><user:{self.user_nickname}/><user_qqid:{self.user_id}/><user_card:{self.user_card}/>{self.message}</message>"

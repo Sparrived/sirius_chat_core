@@ -8,7 +8,7 @@ from ncatbot.plugin_system import EventBus
 from dataclasses import dataclass
 
 from ..base_system import BaseSystem, SystemConfig
-from ...message import ChatRequest, MessageSender
+from ...message import ChatRequest, MessageSender, MessageUnit
 from ...models import ChatModel, FilterModel
 
 class TalkConfig(SystemConfig):
@@ -28,14 +28,14 @@ class TalkSystem(BaseSystem[TalkConfig]):
         self._lock = threading.Lock()
         self._monitor_thread.start()
 
-    def add_talk(self, source: str, current_message: str):
+    def add_talk(self, source: str, current_message: MessageUnit):
         # TODO: 构造MessageChain
         chat_request = ChatRequest(
-            message_chain=self._chat_model.create_initial_message_chain(current_message),
+            message_chain=self._chat_model.create_initial_message_chain(str(current_message)),
             source=source,
             current_message=current_message,
             timestamp=int(time.time()),
-            at_bot=self._chat_model._bot_info.is_mentioned(current_message)
+            at_bot=self._chat_model._bot_info.is_mentioned(str(current_message))
         )
         with self._lock:
             if source not in self._chat_requests:
