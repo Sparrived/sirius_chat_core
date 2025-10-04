@@ -1,7 +1,7 @@
 from typing import Callable
 from typing import Any, Optional
 
-from .errors import ExecuteError
+from ..errors import ExecuteError
 
 from ..api_platforms import ModelPlatform
 from ..message import MessageChain, MessageChainBuilder, ChatRequest
@@ -50,10 +50,11 @@ class BaseModel:
         return mcb.build()
 
     def add_tool(self, func: Callable, desc: str = ""):
+        """添加工具函数，func为函数对象，desc为函数描述"""
         try:
             if not hasattr(self, "_tools"):
                 self._tools = []
-            self._tools.append({"type": "function", "function": FunctionBuilder(function=func, description=desc).build_function_json()})
+            self._tools.append({"type": "function", "function": FunctionBuilder(func, desc).build_function_json()})
         except Exception as e:
             raise ValueError(f"构建工具失败: {e}")
     

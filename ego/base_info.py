@@ -1,6 +1,9 @@
 from pathlib import Path
 import yaml
 import os
+
+from ..utils import ConfigGenerator
+
 class BotBaseInfo:
     """机器人基础信息，可通过 YAML 修改后热重载"""
     name = "月白"
@@ -14,33 +17,18 @@ class BotBaseInfo:
     appearance = "有着蓝色的长发和蓝色的眼睛，身材高挑纤细，喜欢穿蓝色JK。"
 
     def __init__(self, work_path: Path):
-        yaml_path = work_path / "bot_info.yaml"
-        if not os.path.exists(yaml_path):
-            # 如果文件不存在，则创建一个，内容为当前类的属性
-            info = {
-                "name": self.name,
-                "alias": self.alias,
-                "gender": self.gender,
-                "age": self.age,
-                "species": self.species,
-                "hobbies": self.hobbies,
-                "personality": self.personality,
-                "appearance": self.appearance,
-                "chat_style": self.chat_style
-            }
-            with open(yaml_path, 'w', encoding='utf-8') as f:
-                # sort_keys=False 确保按构建 info 时的插入顺序输出
-                yaml.safe_dump(info, f, allow_unicode=True, sort_keys=False)
-            return
-        self.update_bot_info(work_path)
+        self._config_generator = ConfigGenerator(work_path, self)
+        self._config_generator.generate_config()
+        self._config_generator.reload_config()
 
-    def update_bot_info(self, work_path: Path):
-        """从 YAML 文件更新机器人信息"""
-        yaml_path = work_path / "bot_info.yaml"
-        with open(yaml_path, 'r', encoding='utf-8') as f:
-            config = yaml.safe_load(f)
-            if not config:
-                return
-            for key, value in config.items():
-                if hasattr(self, key):
-                    setattr(self, key, value)
+    def is_mentioned(self, message: str) -> bool:
+        """检查消息中是否提及了机器人"""
+        message = message.lower()
+        if not self.alias:
+            return False
+        if self.name in message:
+            return True
+        for nickname in self.alias:
+            if nickname in message:
+                return True
+        return False

@@ -1,6 +1,7 @@
 from ..ego.base_info import BotBaseInfo
 from .ego_prompt import SELFINFOPROMPT
 from .message_prompt import MESSAGEUNITPROMPT
+from .model_prompt import CHATTOOLSPROMPT, MEMOTICONPROMPT, FILTERPROMPT
 
 class PromptManager:
     @staticmethod
@@ -29,3 +30,18 @@ class PromptManager:
     @staticmethod
     def get_message_unit_prompt() -> str:
         return MESSAGEUNITPROMPT
+
+    @staticmethod
+    def get_chat_tools_prompt(tools: list[dict]) -> str:
+        tool_descriptions = []
+        for tool in tools:
+            tool_descriptions.append(f"- {tool['function']['name']}:{tool['function']['description']}")
+        return CHATTOOLSPROMPT.format("\n".join(tool_descriptions))
+    
+    @staticmethod
+    def get_memoticon_prompt() -> str:
+        return MEMOTICONPROMPT
+    
+    @staticmethod
+    def get_filter_prompt() -> str:
+        return FILTERPROMPT
