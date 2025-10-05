@@ -1,7 +1,7 @@
 import base64
 from ncatbot.plugin_system import NcatBotPlugin, NcatBotEvent, on_message, on_notice
 from ncatbot.core import BaseMessageEvent, GroupMessageEvent, PrivateMessageEvent, NoticeEvent
-from ncatbot.core.event import At, AtAll, PlainText
+from ncatbot.core.event import At, AtAll, PlainText, Face, Image
 from ncatbot.utils import get_log, status
 import requests
 
@@ -78,14 +78,13 @@ class SiriusChatCore(NcatBotPlugin):
             return  # 忽略其他类型消息
         self.log.debug(f"收到消息，来源: {source}, 内容: {event.raw_message}")
         # ======== 处理表情包 ========
-        if len(event.message) == 1 and "summary=&#91;动画表情&#93;" in str(event.raw_message):
+        if len(event.message) == 1 and "summary=&#91;动画表情&#93;" in str(event.raw_message): # CQ码中存在summary=&#91;动画表情&#93;的是用户储存的表情包
             img = event.message.filter_image()[0]
             response = requests.get(img.url)
             response.raise_for_status()
             img_base64 = base64.b64encode(response.content).decode("utf-8")
             self.memoticon_system.judge_meme(img_base64)
             return # 学习完直接跑路，不回复
-        # TODO: 使用VLM处理其它图片
         # ======== 构造 MessageUnit 并交给 TalkSystem ========
         message = ""
         for seg in event.message:
@@ -99,6 +98,11 @@ class SiriusChatCore(NcatBotPlugin):
                 message += "@全体成员 "
             elif isinstance(seg, PlainText):
                 message += seg.text
+            elif isinstance(seg, Face):
+                continue  # 忽略QQ表情
+            elif isinstance(seg, Image):
+                # TODO: 使用VLM处理其它图片
+                continue
             else:
                 raise ValueError(f"不支持的消息段类型: {type(seg)}，请联系开发者。")
         mu = MessageUnit(

@@ -1,6 +1,7 @@
 from pathlib import Path
 import yaml
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from ..organs.base_system import SystemConfig
 
