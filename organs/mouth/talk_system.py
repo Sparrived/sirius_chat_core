@@ -89,6 +89,13 @@ class TalkSystem(BaseSystem[TalkConfig]):
                     self.log.info(f"关闭 {source} 的对话处理线程。")
                     del self._chat_requests[source]
 
+    def dispose(self):
+        with self._lock:
+            for source in list(self._chat_requests.keys()):
+                self.log.info(f"关闭 {source} 的对话处理线程。")
+                del self._chat_requests[source]
+        self.log.info("对话系统已关闭。")
+
 @dataclass(slots=True)
 class _ChatChannelState:
     """单个来源的对话通道状态。

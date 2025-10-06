@@ -27,7 +27,7 @@ class SiriusChatCore(NcatBotPlugin):
         pass
 
     async def on_close(self) -> None:
-        pass
+        self.talk_system.dispose()
     
     @on_notice
     async def handle_notice(self, event: NoticeEvent):
@@ -90,11 +90,11 @@ class SiriusChatCore(NcatBotPlugin):
         for seg in event.message:
             if isinstance(seg, At):
                 if not isinstance(event, GroupMessageEvent): # 该死的Pylance
-                    raise ValueError("这是不可能发生的事情！！！")
+                    raise ValueError("你的意思是你在私聊收到了@消息吗？这不应该发生啊？！")
                 message += f"@{status.global_api.get_group_member_info_sync(event.group_id, seg.qq).nickname} "
             elif isinstance(seg, AtAll):
                 if not isinstance(event, GroupMessageEvent):
-                    raise ValueError("这是不可能发生的事情！！！")
+                    raise ValueError("你的意思是你在私聊收到了@消息吗？这不应该发生啊？！")
                 message += "@全体成员 "
             elif isinstance(seg, PlainText):
                 message += seg.text

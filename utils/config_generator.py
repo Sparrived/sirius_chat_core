@@ -1,9 +1,9 @@
 from pathlib import Path
-import yaml
 from typing import TYPE_CHECKING
+import yaml
 
 if TYPE_CHECKING:
-    from ..organs.base_system import SystemConfig
+    from ..organs import SystemConfig
 
 class ConfigGenerator:
     """配置文件生成器, 通过依赖注入调整config"""

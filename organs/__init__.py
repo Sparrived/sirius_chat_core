@@ -1,5 +1,5 @@
 from .mouth.talk_system import TalkSystem
 from .mouth.memoticon_system import MemoticonSystem
-from .base_system import BaseSystem
+from .base_system import BaseSystem, SystemConfig
 
-__all__ = ["TalkSystem", "MemoticonSystem", "BaseSystem"]
+__all__ = ["TalkSystem", "MemoticonSystem", "BaseSystem", "SystemConfig"]

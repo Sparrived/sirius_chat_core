@@ -18,7 +18,7 @@ class MemoticonModel(BaseModel):
         reply_msg = model_output["choices"][0]["message"]["content"].replace("```json", "").replace("```", "")
         try:
             reply_json = json.loads(reply_msg)
-            if isinstance(reply_json, dict) and "is_meme" in reply_json and "meme_type" in reply_json and "desp" in reply_json:
+            if isinstance(reply_json, dict) and "is_meme" in reply_json and "meme_type" in reply_json and "description" in reply_json:
                 return reply_json
             raise ValueError(f"表情包判别模型返回内容不完整")
         except Exception as e:

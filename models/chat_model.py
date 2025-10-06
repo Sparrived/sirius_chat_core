@@ -1,17 +1,18 @@
 import json
 import time
-from typing import Optional, override, Callable
+from typing import Optional, override, Callable, TYPE_CHECKING
 
 from .base_model import BaseModel
 from .filter_model import FilterModel
 from ..api_platforms import ModelPlatform
 from ..prompts import PromptManager
-from ..ego import BotBaseInfo
 from ..message import ChatRequest
 
+if TYPE_CHECKING:
+    from ..ego import BotBaseInfo
 
 class ChatModel(BaseModel):
-    def __init__(self, model_name: str, platform: ModelPlatform, bot_info: BotBaseInfo):
+    def __init__(self, model_name: str, platform: ModelPlatform, bot_info: "BotBaseInfo"):
         self._init_tools = False
         self._chat_temp: list[dict] = []
         self._bot_info = bot_info

@@ -65,8 +65,9 @@ class MemoticonSystem(BaseSystem[MemoticonConfig]):
         result = self._model.judge_meme(img_base64)
         if result["is_meme"]:
             if result["meme_type"]:
-                result = self.save_image(img_base64, tags=",".join(result["meme_type"]), description=result["desp"])
-                self.log.info(result)
+                result = self.save_image(img_base64, tags=",".join(result["meme_type"]), description=result["description"])
+                if result:
+                    self.log.info(result)
         return
     
     def send_meme(self, source, emotion: str = "平静"):
@@ -132,7 +133,7 @@ class MemoticonSystem(BaseSystem[MemoticonConfig]):
         img_hash = self.calculate_hash(base64_str)
         img_path = os.path.join(self._img_dir, f"{img_hash}.jpg")
         try:
-            if not self.has_image(img_hash):
+            if self.has_image(img_hash):
                 return None
             conn = sqlite3.connect(self._db_path)
             c = conn.cursor()
