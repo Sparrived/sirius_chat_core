@@ -7,20 +7,23 @@ from ncatbot.utils import get_log
 from ncatbot.plugin_system import EventBus
 from dataclasses import dataclass
 
+from .memoticon_system import MemoticonSystem
 from ..base_system import BaseSystem, SystemConfig
 from ...message import ChatRequest, MessageSender, MessageUnit
 from ...models import ChatModel, FilterModel
 
 class TalkConfig(SystemConfig):
+    filter_keywords: list[str] = ["台湾", "香港", "澳门", "习近平"]  # 过滤关键词列表
     def __init__(self, work_path: Path) -> None:
-        super().__init__(work_path, [])
+        super().__init__(work_path, ["filter_keywords"])
 
 class TalkSystem(BaseSystem[TalkConfig]):
     log = get_log("SiriusChatCore-TalkSystem")
-    def __init__(self, event_bus: EventBus, work_path: Path, chat_model: ChatModel, filter: Optional[FilterModel] = None):
+    def __init__(self, event_bus: EventBus, work_path: Path, chat_model: ChatModel, filter: Optional[FilterModel] = None, memoticon_system: Optional[MemoticonSystem] = None):
         super().__init__(event_bus, work_path, TalkConfig(work_path))
         self._chat_model = chat_model
         self._filter = filter
+        self._memoticon_system = memoticon_system
         # 监控线程：定期清理长时间空闲的来源
         self._monitor_thread = threading.Thread(name="mouth_monitor_thread", target=self._monitor_loop, daemon=True)
         self._talk_processors = []
@@ -68,13 +71,25 @@ class TalkSystem(BaseSystem[TalkConfig]):
                         time.sleep(len(original_content) / 5)  # 模拟打字延迟
                 else:
                     for reply_msg in p_data.get("content", []):
-                        self.log.info(f"向 {source} 发送消息: {reply_msg}")
+                        if not self.is_message_allowed(reply_msg):
+                            self.log.info(f"过滤发送给 {source} 的消息: {reply_msg} 原因: 包含敏感词")
+                            MessageSender.send_message_to_source_sync(source, f"该消息已被过滤。")
+                            continue
+                        self.log.info(f"向 {source} 发送消息: {reply_msg}，当前心情: {emotion}")
                         MessageSender.send_message_to_source_sync(source, reply_msg)
                         time.sleep(len(reply_msg) / 5)  # 模拟打字延迟
+                if self._memoticon_system and emotion:
+                    self._memoticon_system.send_meme(source, emotion)
                 
             except Exception as e:
                 self.log.error(f"在处理 {source} 的回复时出现了错误: {e}")
 
+    def is_message_allowed(self, message: str) -> bool:
+        """检查消息是否包含过滤关键词"""
+        for keyword in self.config.filter_keywords:
+            if keyword in message:
+                return False
+        return True
 
     def _monitor_loop(self):
         self.log.debug("对话监控线程已启动。")

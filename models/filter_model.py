@@ -1,5 +1,5 @@
 import json
-from typing import override
+from typing import Optional, override
 from .base_model import BaseModel
 
 from ..errors import ExecuteError
@@ -10,6 +10,8 @@ class FilterModel(BaseModel):
     def __init__(self, model_name: str, platform: ModelPlatform):
         system_prompt = PromptManager.get_filter_prompt()
         super().__init__(system_prompt, model_name, platform, temperature=0.1, max_tokens=2048, enable_thinking=True, thinking_budget=512)
+
+        
 
     @override
     def _process_data(self, model_output : dict) -> dict:

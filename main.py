@@ -1,9 +1,10 @@
 import base64
 from ncatbot.plugin_system import NcatBotPlugin, NcatBotEvent, on_message, on_notice
 from ncatbot.core import BaseMessageEvent, GroupMessageEvent, PrivateMessageEvent, NoticeEvent
-from ncatbot.core.event import At, AtAll, PlainText, Face, Image
+from ncatbot.core.event import At, AtAll, PlainText, Face, Image, MessageArray
 from ncatbot.utils import get_log, status
 import requests
+from pathlib import Path
 
 from .config import SiriusChatCoreConfig
 from .ego import BotBaseInfo
@@ -78,13 +79,15 @@ class SiriusChatCore(NcatBotPlugin):
             return  # 忽略其他类型消息
         self.log.debug(f"收到消息，来源: {source}, 内容: {event.raw_message}")
         # ======== 处理表情包 ========
-        if len(event.message) == 1 and "summary=&#91;动画表情&#93;" in str(event.raw_message): # CQ码中存在summary=&#91;动画表情&#93;的是用户储存的表情包
-            img = event.message.filter_image()[0]
-            response = requests.get(img.url)
-            response.raise_for_status()
-            img_base64 = base64.b64encode(response.content).decode("utf-8")
-            self.memoticon_system.judge_meme(img_base64)
-            return # 学习完直接跑路，不回复
+        imgs = event.message.filter_image()
+        if len(imgs) == 1:
+            img = imgs[0]
+            if img.is_animated_image():
+                response = requests.get(img.url)
+                response.raise_for_status()
+                img_base64 = base64.b64encode(response.content).decode("utf-8")
+                self.memoticon_system.judge_meme(img_base64)
+                return  # 学习完直接跑路，不回复
         # ======== 构造 MessageUnit 并交给 TalkSystem ========
         message = ""
         for seg in event.message:
@@ -104,7 +107,7 @@ class SiriusChatCore(NcatBotPlugin):
                 # TODO: 使用VLM处理其它图片
                 continue
             else:
-                raise ValueError(f"不支持的消息段类型: {type(seg)}，请联系开发者。")
+                raise ValueError(f"不支持的消息段类型: {type(seg)}，请联系开发者以提供支持。")
         mu = MessageUnit(
             user_nickname=event.sender.nickname,
             user_id=str(event.user_id),
@@ -133,7 +136,17 @@ class SiriusChatCore(NcatBotPlugin):
 
     def model_init(self):
         """模型初始化"""
-        self._bot_info = BotBaseInfo(self.workspace)
+        # ======== bot人格初始化 ========
+        Path(self.workspace / "simulate_someone").mkdir(parents=True, exist_ok=True)
+        if self.config["simulate_someone"]["enabled"]:
+            self.log.info(f"启用模拟某人模式，所有回复将模拟 {self.config['simulate_someone']['someone_name']} 的风格，注意，此时的chat_style设置不生效。")
+            try:
+                self._bot_info = BotBaseInfo(self.workspace, someone=self.config["simulate_someone"]["someone_name"])
+            except Exception as e:
+                self.log.error(f"无法加载 {self.config['simulate_someone']['someone_name']} 的信息文件，{e}，插件以默认设置继续。")
+                self._bot_info = BotBaseInfo(self.workspace)
+        else:
+            self._bot_info = BotBaseInfo(self.workspace)
         # ======== Chat Model 初始化 ========
         platform_name, model_name = next(iter(self.config["model_settings"]["model_selection"]["ChatModel"].items()))
         chat_model = ChatModel(
@@ -142,11 +155,11 @@ class SiriusChatCore(NcatBotPlugin):
             bot_info=self._bot_info
         )
         # ======== Filter Model 初始化 ========
+        platform_name, model_name = next(iter(self.config["model_settings"]["model_selection"]["FilterModel"].items()))
         if self.config["chat_settings"]["filter_mode"]:
-            platform_name, model_name = next(iter(self.config["model_settings"]["model_selection"]["FilterModel"].items()))
             filter_model = FilterModel(
                 model_name=model_name,
-                platform=PLATFORMNAMEMAP[platform_name](self.config["model_settings"]["platforms_apikey"][platform_name])
+                platform=PLATFORMNAMEMAP[platform_name](self.config["model_settings"]["platforms_apikey"][platform_name]),
             )
         else:
             filter_model = None
@@ -157,6 +170,6 @@ class SiriusChatCore(NcatBotPlugin):
             platform=PLATFORMNAMEMAP[platform_name](self.config["model_settings"]["platforms_apikey"][platform_name])
         )
         # ======== 系统初始化 ========
-        self.talk_system = TalkSystem(self.event_bus, self.workspace, chat_model, filter_model)
         self.memoticon_system = MemoticonSystem(self.event_bus, self.workspace, memoticon_model)
+        self.talk_system = TalkSystem(self.event_bus, self.workspace, chat_model, filter_model, self.memoticon_system)
 

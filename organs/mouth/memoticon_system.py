@@ -6,6 +6,7 @@ import sqlite3
 import os
 import base64
 from typing import Optional
+from typing_extensions import deprecated
 from PIL import Image
 from ncatbot.utils import get_log
 from ncatbot.plugin_system import EventBus
@@ -54,7 +55,8 @@ class MemoticonSystem(BaseSystem[MemoticonConfig]):
         """判断图片是否为表情包，是则保存"""
         if random.random() > self.config.save_prob:
             return
-        img_base64 = self.resize_image(img_base64)
+        # ncatbot 已经更新，不再需要resize
+        # img_base64 = self.resize_image(img_base64)
         img_hash = hashlib.sha256(img_base64.encode()).hexdigest()
         conn = sqlite3.connect(self._db_path)
         c = conn.cursor()
@@ -79,6 +81,7 @@ class MemoticonSystem(BaseSystem[MemoticonConfig]):
             self.log.info(f"发送表情包到 {source}: {img_path}")
             asyncio.run(MessageSender.send_message_to_source(source, image=img_path))
 
+    @deprecated("ncatbot已经更新，不再需要缩放图片")
     def resize_image(self, img_base64: str) -> str:
         """缩放图片，确保其在QQ内显示大小合理，返回base64编码。支持 GIF 和 JPG/PNG。"""
         img_bytes = base64.b64decode(img_base64)
@@ -112,6 +115,7 @@ class MemoticonSystem(BaseSystem[MemoticonConfig]):
     def calculate_hash(self, base64_str: str):
         return hashlib.sha256(base64_str.encode()).hexdigest()
     
+    @deprecated("ncatbot已经更新，不再需要缩放图片")
     def has_resized_image(self, base64_str: str) -> bool:
         img_hash = self.calculate_hash(self.resize_image(base64_str))
         return self.has_image(img_hash)

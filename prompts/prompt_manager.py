@@ -8,15 +8,18 @@ from .model_prompt import CHATTOOLSPROMPT, MEMOTICONPROMPT, FILTERPROMPT
 class PromptManager:
     @staticmethod
     def _get_self_info_prompt(bot_info: BotBaseInfo) -> str:
+        if bot_info.more_info == "无":
+            more_info = f"性格为{'、'.join(x for x in bot_info.personality)}，爱好为{'、'.join(x for x in bot_info.hobbies)}"
+        else:
+            more_info = bot_info.more_info
         return SELFINFOPROMPT.format(
             bot_info.name,
             "、".join(x for x in bot_info.alias),
             bot_info.gender,
             bot_info.age,
             bot_info.species,
-            "、".join(x for x in bot_info.hobbies),
-            "、".join(x for x in bot_info.personality),
             bot_info.appearance,
+            more_info,
             "、".join(x for x in bot_info.chat_style)
         )
     @staticmethod

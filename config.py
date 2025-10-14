@@ -13,7 +13,11 @@ class SiriusChatCoreConfig:
         }
     }
     chat_settings = {
-        "filter_mode": True,
+        "filter_mode": False,
         "private_chat_mode": True
+    }
+    simulate_someone = {
+        "enabled": False,
+        "someone_name": "某人"
     }
     
