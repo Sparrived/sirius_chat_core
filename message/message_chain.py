@@ -101,12 +101,27 @@ class MessageChainBuilder:
         else:
             raise ValueError("message_units 不能为空")
         return self
+    
+    def add_message_by_units(self, message_units: List[MessageUnit]) -> "MessageChainBuilder":
+        if not self._messages:
+            raise ValueError("请先创建 system 消息")
+        last_unit: Optional[MessageUnit] = None
+        for unit in message_units:
+            if unit.is_self:
+                self.add_assistant_message(str(unit))
+            else:
+                self.add_user_message(str(unit))
+        return self
 
     def add_assistant_message(self, content: str) -> "MessageChainBuilder":
         if not self._messages:
             raise ValueError("请先创建 system 消息")
         self._ensure_not_consecutive("assistant")
         self._messages.append({"role": "assistant", "content": content})
+        return self
+    
+    def append_system_message(self, content: str) -> "MessageChainBuilder":
+        self._messages[0]["content"] += f"\n{content}"
         return self
 
     # 维护 -----------------------------------------------------------

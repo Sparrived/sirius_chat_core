@@ -8,6 +8,7 @@ from ncatbot.plugin_system import EventBus
 from dataclasses import dataclass
 
 from .memoticon_system import MemoticonSystem
+from ..brain.memory_system import MemorySystem
 from ..base_system import BaseSystem, SystemConfig
 from ...message import ChatRequest, MessageSender, MessageUnit
 from ...models import ChatModel, FilterModel
@@ -19,11 +20,12 @@ class TalkConfig(SystemConfig):
 
 class TalkSystem(BaseSystem[TalkConfig]):
     log = get_log("SiriusChatCore-TalkSystem")
-    def __init__(self, event_bus: EventBus, work_path: Path, chat_model: ChatModel, filter: Optional[FilterModel] = None, memoticon_system: Optional[MemoticonSystem] = None):
+    def __init__(self, event_bus: EventBus, work_path: Path, chat_model: ChatModel, memoticon_system: MemoticonSystem, memory_system: MemorySystem, filter: Optional[FilterModel] = None):
         super().__init__(event_bus, work_path, TalkConfig(work_path))
         self._chat_model = chat_model
         self._filter = filter
         self._memoticon_system = memoticon_system
+        self._memory_system = memory_system
         # 监控线程：定期清理长时间空闲的来源
         self._monitor_thread = threading.Thread(name="mouth_monitor_thread", target=self._monitor_loop, daemon=True)
         self._talk_processors = []
@@ -33,6 +35,7 @@ class TalkSystem(BaseSystem[TalkConfig]):
 
     def add_talk(self, source: str, current_message: MessageUnit):
         # TODO: 构造MessageChain
+        self._memory_system.add_to_short_term(current_message)
         chat_request = ChatRequest(
             message_chain=self._chat_model.create_initial_message_chain(str(current_message)),
             source=source,
@@ -57,7 +60,7 @@ class TalkSystem(BaseSystem[TalkConfig]):
             if not chat_request and not isinstance(chat_request, ChatRequest):
                 continue
             try:
-                p_data, v_data, emotion = self._chat_model.process_func(chat_request, self._filter)
+                p_data, v_data, emotion, daily = self._chat_model.process_func(chat_request, self._filter)
                 if v_data:
                     for original_content, verification_result in zip(p_data["content"], v_data["verified"]):
                         can_output = verification_result.get("can_output", False)
@@ -78,7 +81,9 @@ class TalkSystem(BaseSystem[TalkConfig]):
                         self.log.info(f"向 {source} 发送消息: {reply_msg}，当前心情: {emotion}")
                         MessageSender.send_message_to_source_sync(source, reply_msg)
                         time.sleep(len(reply_msg) / 5)  # 模拟打字延迟
-                if self._memoticon_system and emotion:
+                if daily:
+                    self.log.info(f"记录日记: {daily}")
+                if self._memoticon_system:
                     self._memoticon_system.send_meme(source, emotion)
                 
             except Exception as e:

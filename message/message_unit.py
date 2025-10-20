@@ -26,11 +26,14 @@ class MessageUnit:
     source: str = field(default="")
     user_card: Optional[str] = field(default=None)
     is_notice: bool = field(default=False)
+    is_self: bool = field(default=False)  # 是否为机器人自己发送的消息
 
     # ------------------------------------------------------------------
     # 序列化 / 反序列化
     # ------------------------------------------------------------------
     def __str__(self) -> str: 
+        if self.is_self:
+            return f"<time:{self.time}/>{self.message}"
         if self.user_card:
             if self.is_notice:
                 return (

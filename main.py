@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .config import SiriusChatCoreConfig
 from .ego import BotBaseInfo
-from .organs import TalkSystem, MemoticonSystem
+from .organs import TalkSystem, MemoticonSystem, MemorySystem
 from .models import ChatModel, FilterModel, MemoticonModel
 from .api_platforms import PLATFORMNAMEMAP
 from .message import MessageUnit
@@ -169,7 +169,15 @@ class SiriusChatCore(NcatBotPlugin):
             model_name=model_name,
             platform=PLATFORMNAMEMAP[platform_name](self.config["model_settings"]["platforms_apikey"][platform_name])
         )
+        # ======== Summary Model 初始化 ========
+        platform_name, model_name = next(iter(self.config["model_settings"]["model_selection"]["SummaryModel"].items()))
+        summary_model = None
+        # summary_model = SummaryModel(
+        #     model_name=model_name,
+        #     platform=PLATFORMNAMEMAP[platform_name](self.config["model_settings"]["platforms_apikey"][platform_name])
+        # )
         # ======== 系统初始化 ========
         self.memoticon_system = MemoticonSystem(self.event_bus, self.workspace, memoticon_model)
-        self.talk_system = TalkSystem(self.event_bus, self.workspace, chat_model, filter_model, self.memoticon_system)
+        self.memory_system = MemorySystem(self.event_bus, self.workspace, summary_model)
+        self.talk_system = TalkSystem(self.event_bus, self.workspace, chat_model, self.memoticon_system, self.memory_system, filter_model)
 

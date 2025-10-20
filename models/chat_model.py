@@ -6,7 +6,7 @@ from .base_model import BaseModel
 from .filter_model import FilterModel
 from ..api_platforms import ModelPlatform
 from ..prompts import PromptManager
-from ..message import ChatRequest
+from ..message import ChatRequest, MessageChainBuilder, MessageChain
 
 if TYPE_CHECKING:
     from ..ego import BotBaseInfo
@@ -29,6 +29,16 @@ class ChatModel(BaseModel):
         self._init_tools = True
 
     @override
+    def create_initial_message_chain(self, user_message: Optional[str] = None, img_base64: Optional[str] = None) -> MessageChain:
+        """创建初始消息链，如果传入其他参数则下一条信息应为助手消息，传入消息作为用户消息"""
+        self._system_prompt = PromptManager.get_chat_prompt(self._bot_info)
+        mcb = MessageChainBuilder()
+        mcb.create_new_message_chain(self._system_prompt)
+        if user_message or img_base64:
+            mcb.add_user_message(user_message, img_base64)
+        return mcb.build()
+
+    @override
     def _process_data(self, model_output: dict) -> dict:
         try:
             content = json.loads(model_output["choices"][0]["message"]["content"])
@@ -38,28 +48,14 @@ class ChatModel(BaseModel):
         except Exception as e:
             raise ValueError(f"处理数据失败: {e}")
 
-    def process_func(self, chat_request: ChatRequest, filter: Optional[FilterModel]) -> tuple[dict, dict, str]:
+    def process_func(self, chat_request: ChatRequest, filter: Optional[FilterModel]) -> tuple[dict, dict, str, str]:
         processed_data = self.get_process_data(chat_request)
         validation_data = {}
         emotion = processed_data["emotion"] if processed_data["emotion"] in ["喜悦", "愤怒", "悲伤", "厌恶", "平静", "尴尬", "失望", "渴望", "疑惑"] else "平静"
+        daily = processed_data["diary"] if "diary" in processed_data else ""
         if filter:
             cr = ChatRequest(filter.create_initial_message_chain(str(processed_data)))
             validation_data = filter.get_process_data(cr)
-        return processed_data, validation_data, emotion
-    
-    def generate_reply_func(self, processed_data, validation_data = None):
-        if validation_data:
-            for original_content, verification_result in zip(processed_data["content"], validation_data["verified"]):
-                can_output = verification_result.get("can_output", False)
-                reason = verification_result.get("reason", "")
-                if not can_output:
-                    yield f"!!过滤!!({reason})", original_content
-                else:
-                    yield original_content, ""
-                time.sleep(len(original_content) / 5)  # 模拟打字延迟
-        else:
-            for reply_msg in processed_data.get("content", []):
-                yield reply_msg, ""
-                time.sleep(len(reply_msg) / 5)  # 模拟打字延迟
+        return processed_data, validation_data, emotion, daily
         
 
