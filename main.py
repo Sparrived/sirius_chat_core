@@ -1,4 +1,5 @@
 import base64
+import threading
 from ncatbot.plugin_system import NcatBotPlugin, NcatBotEvent, on_message, on_notice
 from ncatbot.core import BaseMessageEvent, GroupMessageEvent, PrivateMessageEvent, NoticeEvent
 from ncatbot.core.event import At, AtAll, PlainText, Face, Image, MessageArray
@@ -19,10 +20,13 @@ class SiriusChatCore(NcatBotPlugin):
     description = "Sirius的机器人聊天模型中枢插件。"
     log = get_log(name)
 
+    model_initialize = False
+
     async def on_load(self):
         self.plugin_config_register()
         self.plugin_init()
-        self.model_init()
+        # 启动模型初始化线程，保证原始on_load轻量化
+        threading.Thread(target=self.model_init).start()
 
     async def on_reload(self) -> None:
         pass
@@ -32,6 +36,8 @@ class SiriusChatCore(NcatBotPlugin):
     
     @on_notice
     async def handle_notice(self, event: NoticeEvent):
+        if not self.model_initialize:
+            return
         """处理通知"""
         # 处理戳一戳
         if event.notice_type == "notify" and event.sub_type == "poke":
@@ -64,6 +70,11 @@ class SiriusChatCore(NcatBotPlugin):
 
     @on_message
     async def handle_message(self, event: BaseMessageEvent):
+        return
+        if not self.model_initialize:
+            return
+        if event.message.filter_text()[0].text.startswith("/"):
+            return
         """处理消息"""
         if isinstance(event, PrivateMessageEvent):
             if not self.config["chat_settings"]["private_chat_mode"]:
@@ -180,4 +191,6 @@ class SiriusChatCore(NcatBotPlugin):
         self.memoticon_system = MemoticonSystem(self.event_bus, self.workspace, memoticon_model)
         self.memory_system = MemorySystem(self.event_bus, self.workspace, summary_model)
         self.talk_system = TalkSystem(self.event_bus, self.workspace, chat_model, self.memoticon_system, self.memory_system, filter_model)
+        self.log.info("模型初始化完成.")
+        self.model_initialize = True
 

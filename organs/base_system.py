@@ -23,6 +23,7 @@ class SystemConfig:
         self._config_generator.reload_config()
 
 
+
 class BaseSystem(Generic[TConfig]):
     """系统基类，泛型形式绑定具体配置类型。
 

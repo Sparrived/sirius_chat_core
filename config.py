@@ -9,7 +9,8 @@ class SiriusChatCoreConfig:
         "model_selection": {
             "FilterModel": {"SiliconFlow": "Qwen/Qwen3-30B-A3B"},
             "ChatModel": {"VolcengineArk": "deepseek-v3-1-250821"},
-            "MemoticonModel": {"SiliconFlow": "Pro/Qwen/Qwen2.5-VL-7B-Instruct"}
+            "MemoticonModel": {"SiliconFlow": "Pro/Qwen/Qwen2.5-VL-7B-Instruct"},
+            "SummaryModel": {"VolcengineArk": "deepseek-v3-1-250821"}
         }
     }
     chat_settings = {
